@@ -1,0 +1,57 @@
+name: Build PyTorch v2.0.0 without AVX
+
+on:
+  push:
+    branches:
+      - Fix-aarch64-build
+  pull_request:
+    branches:
+      - Fix-aarch64-build
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        repository: 'rmast/pytorch'
+        ref: 'Fix-aarch64-build'
+        submodules: 'recursive'
+
+    - uses: conda-incubator/setup-miniconda@v3
+      with:
+        auto-activate-base: true
+        activate-environment: true
+        python-version: 3.10.13
+
+    - name: Install Dependencies - Common - Linux 2
+      run: |
+        conda info
+        conda list
+        conda install nomkl
+        conda install astunparse numpy ninja pyyaml setuptools cmake cffi typing_extensions future six requests dataclasses
+        export PYTORCH_CPU_CAPABILITY=cpu
+        export ATEN_CPU_CAPABILITY_DEFAULT=cpu
+        export CMAKE_PREFIX_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"}
+        export ATEN_CPU_CAPABILITY=default
+        export USE_NNPACK=0
+        export MAX_JOBS=4
+        export USE_CUDA=0
+        export USE_ROCM=0
+        export USE_MKLDNN=0
+        export BLAS=OpenBLAS
+        export CMAKE_ARGS="-D CMAKE_BUILD_TYPE=Release -D USE_AVX=OFF -D USE_NNPACK=OFF -D C_HAS_AVX_2=OFF -D C_HAS_AVX2_2=OFF -D CXX_HAS_AVX_2=OFF -D CXX_HAS_AVX2_2=OFF -D CAFFE2_COMPILER_SUPPORTS_AVX512_EXTENSIONS=OFF -DPYTHON_INCLUDE_DIR=$(python -c "import sysconfig; print(sysconfig.get_path('include'))") -DPYTHON_LIBRARY=$(python -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))") -DPYTHON_EXECUTABLE:FILEPATH=`which python`"
+        pip install build wheel typing_extensions
+        python setup.py bdist_wheel
+    - name: Archive production artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-without-markdown
+        path: |
+          dist
+          !dist/**/*.md
