@@ -49,7 +49,12 @@ jobs:
         conda install astunparse numpy ninja pyyaml setuptools cmake cffi typing_extensions future six requests dataclasses
         export CMAKE_PREFIX_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"}
         export BLAS=BLIS
-        export CMAKE_ARGS="-D CMAKE_BUILD_TYPE=Release -DPYTHON_INCLUDE_DIR=$(python -c "import sysconfig; print(sysconfig.get_path('include'))") -DPYTHON_LIBRARY=$(python -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))") -DPYTHON_EXECUTABLE:FILEPATH=`which python`"
+
+        export USE_RCCL=1
+        export USE_NCCL=1
+        export USE_KINETO=1
+
+        export CMAKE_ARGS="-D CMAKE_BUILD_TYPE=Release -DBUILD_LIBTORCH_CPU_WITH_DEBUG=0 -DBUILD_PYTHON=True -DBUILD_PYTHONLESS= -DBUILD_TEST=True -DUSE_CUDA=0 -DUSE_FBGEMM=1 -DUSE_GLOO_WITH_OPENSSL=ON -DUSE_GOLD_LINKER=ON -DUSE_KINETO=1 -DUSE_NCCL=1 -DUSE_NUMPY=True -DUSE_RCCL=1 -DUSE_SPLIT_BUILD=false -DPYTHON_INCLUDE_DIR=$(python -c "import sysconfig; print(sysconfig.get_path('include'))") -DPYTHON_LIBRARY=$(python -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))") -DPYTHON_EXECUTABLE:FILEPATH=`which python`"
         pip install build wheel typing_extensions
         python setup.py bdist_wheel
     - name: Archive production artifacts
